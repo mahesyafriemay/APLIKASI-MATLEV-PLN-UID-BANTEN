@@ -2,7 +2,7 @@ import streamlit as st
 from data import (
     init_demo_data, get_periods, get_aspects, get_indicators, get_assessment,
     save_draft, submit_unit_assessments, add_evidence, get_aspect_weight,
-    compute_unit_total_score,
+    compute_unit_total_score, get_evidence_signed_url,
 )
 from ui import render_topbar, render_sidebar_profile
 
@@ -119,7 +119,11 @@ with tab_isi:
                     for idx, ev in enumerate(evidences):
                         c1, c2 = st.columns([4, 1])
                         c1.write(f"{ev['filename']} — diupload {ev['uploaded_at'].strftime('%d/%m/%Y %H:%M')}")
-                        if ev.get("file_bytes"):
+                        if ev.get("storage_path"):
+                            signed_url = get_evidence_signed_url(ev["storage_path"])
+                            if signed_url:
+                                c2.link_button("Download", signed_url, key=f"dl_{ind['id']}_{period_id}_{idx}")
+                        elif ev.get("file_bytes"):
                             c2.download_button(
                                 "Download", data=ev["file_bytes"], file_name=ev["filename"],
                                 mime=ev.get("mime_type") or "application/octet-stream",

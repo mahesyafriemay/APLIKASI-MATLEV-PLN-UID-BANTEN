@@ -3,7 +3,7 @@ import pandas as pd
 from data import (
     init_demo_data, get_units, get_periods, get_indicators, get_aspects,
     get_assessments_for_units, get_unit_by_id, approve_assessment, request_revision,
-    get_reviews_for, get_assessment,
+    get_reviews_for, get_assessment, get_evidence_signed_url,
 )
 from ui import render_topbar, render_sidebar_profile
 
@@ -95,11 +95,24 @@ with col1:
     evidences = a_detail.get("evidences", [])
     if evidences:
         for idx, ev in enumerate(evidences):
-            file_bytes = ev.get("file_bytes")
             mime_type = ev.get("mime_type") or ""
             c1, c2 = st.columns([4, 1])
             c1.write(f"{ev['filename']}")
-            if file_bytes:
+
+            signed_url = get_evidence_signed_url(ev["storage_path"]) if ev.get("storage_path") else None
+            file_bytes = ev.get("file_bytes")
+
+            if signed_url:
+                c2.link_button("Download", signed_url, key=f"review_dl_{idx}_{row['unit_id']}_{row['indicator_id']}")
+                if mime_type.startswith("image/"):
+                    st.image(signed_url, caption=ev["filename"], width=400)
+                elif mime_type == "application/pdf":
+                    st.markdown(
+                        f'<iframe src="{signed_url}" width="100%" height="500" '
+                        f'style="border:1px solid #E4E9F2;border-radius:8px;"></iframe>',
+                        unsafe_allow_html=True,
+                    )
+            elif file_bytes:
                 c2.download_button(
                     "Download", data=file_bytes, file_name=ev["filename"],
                     mime=mime_type or "application/octet-stream",
