@@ -38,3 +38,35 @@ create policy "simona_state_allow_all"
 -- kali dijalankan kalau baris ini belum ada, jadi INSERT ini boleh dilewati)
 -- insert into simona_state (id, data) values (1, '{}'::jsonb)
 -- on conflict (id) do nothing;
+
+
+-- ============================================================================
+-- STORAGE BUCKET UNTUK EVIDENCE (foto/PDF yang diupload unit)
+-- ============================================================================
+-- PENTING: evidence (foto/PDF) TIDAK disimpan sebagai teks di tabel
+-- simona_state lagi (itu bikin ukuran data bengkak & app jadi berat/gampang
+-- mati). Sekarang file aslinya disimpan di Supabase Storage, cuma path-nya
+-- saja yang dicatat di simona_state.
+
+insert into storage.buckets (id, name, public)
+values ('evidences', 'evidences', false)
+on conflict (id) do nothing;
+
+-- Kebijakan akses bucket: dibuka untuk baca & tulis lewat anon key, sama
+-- alasannya seperti simona_state (app ini pakai login sendiri, bukan
+-- Supabase Auth). Untuk internal use ini wajar.
+create policy "evidences_allow_all_select"
+  on storage.objects for select
+  using (bucket_id = 'evidences');
+
+create policy "evidences_allow_all_insert"
+  on storage.objects for insert
+  with check (bucket_id = 'evidences');
+
+create policy "evidences_allow_all_update"
+  on storage.objects for update
+  using (bucket_id = 'evidences');
+
+create policy "evidences_allow_all_delete"
+  on storage.objects for delete
+  using (bucket_id = 'evidences');
