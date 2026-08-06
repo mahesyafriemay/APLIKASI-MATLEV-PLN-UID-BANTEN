@@ -12,7 +12,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.49.0-jammy
     steps:
       - name: Install Playwright
-        run: npm init -y && npm i playwright
+        run: npm init -y && npm i playwright@1.49.0
 
       - name: Create script
         run: |
