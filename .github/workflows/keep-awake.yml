@@ -16,21 +16,33 @@ jobs:
 
       - name: Create script
         run: |
-          echo "const { chromium } = require('playwright');" > wake.js
-          echo "(async () => {" >> wake.js
-          echo "  const browser = await chromium.launch();" >> wake.js
-          echo "  const page = await browser.newPage();" >> wake.js
-          echo "  await page.goto(process.env.APP_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });" >> wake.js
-          echo "  const btn = page.getByText('Yes, get this app back up!');" >> wake.js
-          echo "  if (await btn.count() > 0) {" >> wake.js
-          echo "    console.log('App tidur - klik tombol wake.');" >> wake.js
-          echo "    await btn.click();" >> wake.js
-          echo "    await page.waitForTimeout(60000);" >> wake.js
-          echo "  } else { console.log('App sudah hidup.'); }" >> wake.js
-          echo "  await page.waitForTimeout(20000);" >> wake.js
-          echo "  console.log('Title:', await page.title());" >> wake.js
-          echo "  await browser.close();" >> wake.js
-          echo "})();" >> wake.js
+          cat > wake.js <<'SCRIPT'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage();
+            await page.goto(process.env.APP_URL, { waitUntil: 'networkidle', timeout: 90000 });
+            await page.waitForTimeout(8000);
+
+            const btn = page.getByRole('button', { name: /get this app back up/i });
+            try {
+              await btn.waitFor({ timeout: 15000 });
+              console.log('>> App TIDUR. Klik tombol wake...');
+              await btn.click();
+              await page.waitForTimeout(90000);
+              console.log('>> Selesai nunggu boot.');
+            } catch (e) {
+              console.log('>> Tombol wake tidak ditemukan (app kemungkinan sudah hidup).');
+            }
+
+            await page.waitForTimeout(20000);
+            const body = await page.innerText('body');
+            console.log('--- ISI HALAMAN (300 char) ---');
+            console.log(body.slice(0, 300));
+            console.log('--- STATUS:', body.includes('Zzzz') ? 'MASIH TIDUR' : 'HIDUP', '---');
+            await browser.close();
+          })();
+          SCRIPT
           cat wake.js
 
       - name: Wake the app
