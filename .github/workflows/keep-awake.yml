@@ -14,24 +14,26 @@ jobs:
       - name: Install Playwright
         run: npm init -y && npm i playwright
 
+      - name: Create script
+        run: |
+          echo "const { chromium } = require('playwright');" > wake.js
+          echo "(async () => {" >> wake.js
+          echo "  const browser = await chromium.launch();" >> wake.js
+          echo "  const page = await browser.newPage();" >> wake.js
+          echo "  await page.goto(process.env.APP_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });" >> wake.js
+          echo "  const btn = page.getByText('Yes, get this app back up!');" >> wake.js
+          echo "  if (await btn.count() > 0) {" >> wake.js
+          echo "    console.log('App tidur - klik tombol wake.');" >> wake.js
+          echo "    await btn.click();" >> wake.js
+          echo "    await page.waitForTimeout(60000);" >> wake.js
+          echo "  } else { console.log('App sudah hidup.'); }" >> wake.js
+          echo "  await page.waitForTimeout(20000);" >> wake.js
+          echo "  console.log('Title:', await page.title());" >> wake.js
+          echo "  await browser.close();" >> wake.js
+          echo "})();" >> wake.js
+          cat wake.js
+
       - name: Wake the app
         env:
           APP_URL: ${{ secrets.APP_URL }}
-        run: |
-          cat > wake.js << 'EOF'
-          const { chromium } = require('playwright');
-
-          (async () => {
-            const browser = await chromium.launch();
-            const page = await browser.newPage();
-
-            await page.goto(process.env.APP_URL, {
-              waitUntil: 'domcontentloaded',
-              timeout: 60000,
-            });
-
-            const btn = page.getByText('Yes, get this app back up!');
-            if (await btn.count() > 0) {
-              console.log('App tidur - klik tombol wake.');
-              await btn.click();
-              await page.waitForTimeout(60000);
+        run: node wake.js
